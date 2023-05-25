@@ -147,3 +147,52 @@ deviance(M_5)
 deviance(M_3)
 
 anova(M_3, M_5, test = 'Chisq')
+
+# Ordinal logistic regression ---------------------------------------------
+
+library(MASS)
+library(pscl)
+
+as_tibble(admit)
+
+M_6 <- polr(score ~ gre.quant, data = admit)
+# Don't do this; this a normal linear model
+# lm(score ~ gre.quant, data = admit)
+
+summary(M_6)
+
+
+admit_df_new <- tibble(gre.quant = seq(300, 800, by = 100))
+
+add_predictions(admit_df_new, M_6, type = 'prob')
+
+# the centre of the logistic distribution if gre.quant = 600 is ..
+coef(M_6) * 600 
+
+# view the thresholds
+M_6$zeta
+
+# view the threshold for the first region, i.e. score = 1
+M_6$zeta['1|2']
+M_6$zeta[1]
+
+plogis(M_6$zeta['1|2'], location = coef(M_6) * 600 )# prob score = 1 if quant = 600
+plogis(M_6$zeta['1|2'], location = coef(M_6) * 300 ) # prob score = 1 if quant = 300
+
+plogis(M_6$zeta['2|3'], location = coef(M_6) * 600 ) # prob score < 2 if quant = 600
+
+# probability of score of 2
+plogis(M_6$zeta['2|3'], location = coef(M_6) * 600 ) - plogis(M_6$zeta['1|2'], location = coef(M_6) * 600 )
+
+# Categorical logistic regression -----------------------------------------
+
+library(nnet)
+
+M_7 <- multinom(score ~ gre.quant, data = admit)
+summary(M_7)
+
+add_predictions(admit_df_new, M_7, type = 'prob')
+
+z <- coef(M_7) %*% c(1, 600)
+z <- c(0, z)
+exp(z) / sum(exp(z)) # softmax; inverse link
